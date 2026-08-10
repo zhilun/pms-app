@@ -1,0 +1,21 @@
+{
+  "short_name": "PMS Sales",
+  "name": "Hệ Thống Quản Lý Đặt Phòng & Sales Tracker",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "icon-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#F2F2F7",
+  "theme_color": "#F2F2F7",
+  "display": "standalone",
+  "orientation": "portrait"
+}
