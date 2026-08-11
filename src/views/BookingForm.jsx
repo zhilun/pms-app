@@ -1,26 +1,59 @@
-// views/BookingForm.jsx
+// src/views/BookingForm.jsx
 import React, { useState, useEffect } from 'react';
+
+// Hàm hỗ trợ format tiền tệ (Ví dụ: 1000000 -> "1,000,000")
+const formatCurrencyInput = (val) => {
+  if (val === undefined || val === null || val === '') return '';
+  const numStr = String(val).replace(/\D/g, '');
+  return numStr ? Number(numStr).toLocaleString('en-US') : '';
+};
+
+// Hàm chuyển chuỗi formatted ("1,000,000") về Số (1000000)
+const parseCurrencyValue = (valStr) => {
+  if (!valStr) return 0;
+  return Number(String(valStr).replace(/\D/g, '')) || 0;
+};
 
 export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpenAddSales }) => {
   const [formData, setFormData] = useState({
     salesPerson: '',
     customerName: '',
     roomCode: '',
+    bedrooms: 1, // Mặc định 1 phòng ngủ
     checkInDate: new Date().toISOString().split('T')[0],
     checkOutDate: '',
-    roomPrice: 0,
-    serviceFee: 0,
-    deposit: 0,
+    roomPriceStr: '0',
+    depositStr: '0',
     confirmationCode: ''
   });
 
   const [warning, setWarning] = useState('');
 
-  // Tự động tính toán (Real-time Calculation)
-  const totalPrice = Number(formData.roomPrice || 0) + Number(formData.serviceFee || 0);
-  const remainingPrice = totalPrice - Number(formData.deposit || 0);
+  // 1. Tính số đêm (Nights) từ checkInDate và checkOutDate
+  const calculateNights = () => {
+    if (!formData.checkInDate || !formData.checkOutDate) return 0;
+    const start = new Date(formData.checkInDate);
+    const end = new Date(formData.checkOutDate);
+    const diffTime = end.getTime() - start.getTime();
+    const nights = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    return nights > 0 ? nights : 0;
+  };
 
-  // Check trùng lịch phòng
+  const nights = calculateNights();
+
+  // 2. Tự động tính Phí Dịch Vụ: Số phòng ngủ x Số đêm x 350,000
+  const bedroomsNum = Number(formData.bedrooms) || 0;
+  const autoServiceFee = bedroomsNum * nights * 350000;
+
+  // 3. Tổng Giá Trị = Giá Phòng (không cộng phí dịch vụ)
+  const roomPriceNum = parseCurrencyValue(formData.roomPriceStr);
+  const totalPrice = roomPriceNum;
+
+  // 4. Còn Phải Thu = Tổng Giá Trị - Tiền Cọc
+  const depositNum = parseCurrencyValue(formData.depositStr);
+  const remainingPrice = totalPrice - depositNum;
+
+  // Kiểm tra trùng lịch phòng
   useEffect(() => {
     if (formData.roomCode && formData.checkInDate && formData.checkOutDate) {
       const isOverlap = existingBookings.some(b => 
@@ -35,29 +68,52 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
     }
   }, [formData.roomCode, formData.checkInDate, formData.checkOutDate, existingBookings]);
 
+  // Xử lý thay đổi tiền tệ ở input
+  const handleMoneyChange = (fieldStr, rawValue) => {
+    const formatted = formatCurrencyInput(rawValue);
+    setFormData(prev => ({ ...prev, [fieldStr]: formatted }));
+  };
+
   const handleSubmit = (e) => {
     e.preventDefault();
+    if (nights <= 0) {
+      alert('Ngày Check-Out phải sau ngày Check-In ít nhất 1 ngày!');
+      return;
+    }
+
     const newBooking = {
       id: crypto.randomUUID(),
       createdDate: new Date().toISOString().split('T')[0],
-      ...formData,
-      roomPrice: Number(formData.roomPrice),
-      serviceFee: Number(formData.serviceFee),
-      deposit: Number(formData.deposit),
-      totalPrice,
-      remainingPrice,
-      // Quy tắc Trạng thái (status logic)
+      salesPerson: formData.salesPerson,
+      customerName: formData.customerName,
+      roomCode: formData.roomCode,
+      bedrooms: bedroomsNum,
+      checkInDate: formData.checkInDate,
+      checkOutDate: formData.checkOutDate,
+      roomPrice: roomPriceNum,
+      serviceFee: autoServiceFee,
+      totalPrice: totalPrice,
+      deposit: depositNum,
+      remainingPrice: remainingPrice,
+      confirmationCode: formData.confirmationCode,
       status: formData.confirmationCode.trim() !== '' ? 'CONFIRMED' : 'PENDING',
       updatedAt: new Date().toISOString()
     };
 
     onSaveBooking(newBooking);
     alert('Tạo đơn đặt phòng thành công!');
+    
     // Reset form
     setFormData({
-      salesPerson: '', customerName: '', roomCode: '',
+      salesPerson: '',
+      customerName: '',
+      roomCode: '',
+      bedrooms: 1,
       checkInDate: new Date().toISOString().split('T')[0],
-      checkOutDate: '', roomPrice: 0, serviceFee: 0, deposit: 0, confirmationCode: ''
+      checkOutDate: '',
+      roomPriceStr: '0',
+      depositStr: '0',
+      confirmationCode: ''
     });
   };
 
@@ -70,11 +126,11 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
       )}
 
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-        {/* Sales Person Selection */}
+        {/* Nhân Viên Sales */}
         <div>
           <div className="flex justify-between items-center mb-1">
             <label className="text-xs font-semibold text-gray-600">NV Sales (*)</label>
-            <button type="button" onClick={onOpenAddSales} className="text-xs text-blue-600 font-medium">+ Thêm Sales</button>
+            <button type="button" onClick={onOpenAddSales} className="text-xs text-blue-600 font-medium">+ Khai Báo Sales</button>
           </div>
           <select 
             required
@@ -89,10 +145,10 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
           </select>
         </div>
 
-        {/* Khách hàng & Phòng */}
+        {/* Khách Hàng & Mã Phòng */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="text-xs font-semibold text-gray-600">Tên Khách Hang (*)</label>
+            <label className="text-xs font-semibold text-gray-600">Tên Khách Hàng (*)</label>
             <input 
               required type="text" placeholder="Nguyễn Văn A" 
               value={formData.customerName}
@@ -101,7 +157,7 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-600">Mã Phòng (*)</label>
+            <label className="text-xs font-semibold text-gray-600">Mã Phòng / Số Phòng (*)</label>
             <input 
               required type="text" placeholder="P101 / Villa 01" 
               value={formData.roomCode}
@@ -111,8 +167,17 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
           </div>
         </div>
 
-        {/* Check-in / Check-out */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Số Phòng Ngủ & Lịch Check-In / Check-Out */}
+        <div className="grid grid-cols-3 gap-2">
+          <div>
+            <label className="text-xs font-semibold text-gray-600">Số Phòng Ngủ (*)</label>
+            <input 
+              required type="number" min="1"
+              value={formData.bedrooms}
+              onChange={e => setFormData({...formData, bedrooms: e.target.value})}
+              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
+            />
+          </div>
           <div>
             <label className="text-xs font-semibold text-gray-600">Ngày Check-In (*)</label>
             <input 
@@ -133,52 +198,54 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
           </div>
         </div>
 
-        {/* Tiền phòng & Dịch vụ */}
+        {/* Nhập Giá Phòng & Tiền Cọc (Định dạng tiền tệ) */}
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-semibold text-gray-600">Giá Phòng (VNĐ)</label>
             <input 
-              type="number" min="0"
-              value={formData.roomPrice}
-              onChange={e => setFormData({...formData, roomPrice: e.target.value})}
-              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
+              type="text"
+              placeholder="0"
+              value={formData.roomPriceStr}
+              onChange={e => handleMoneyChange('roomPriceStr', e.target.value)}
+              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm font-medium"
             />
           </div>
           <div>
-            <label className="text-xs font-semibold text-gray-600">Phí Dịch Vụ (VNĐ)</label>
+            <label className="text-xs font-semibold text-gray-600">Tiền Cọc Đã Trả (VNĐ)</label>
             <input 
-              type="number" min="0"
-              value={formData.serviceFee}
-              onChange={e => setFormData({...formData, serviceFee: e.target.value})}
-              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
+              type="text"
+              placeholder="0"
+              value={formData.depositStr}
+              onChange={e => handleMoneyChange('depositStr', e.target.value)}
+              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm font-medium"
             />
           </div>
         </div>
 
-        {/* Tiền cọc */}
-        <div>
-          <label className="text-xs font-semibold text-gray-600">Tiền Cọc Đã Trả (VNĐ)</label>
-          <input 
-            type="number" min="0"
-            value={formData.deposit}
-            onChange={e => setFormData({...formData, deposit: e.target.value})}
-            className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
-          />
+        {/* Bảng Tính Toán Tự Động */}
+        <div className="p-3.5 bg-gray-50 rounded-2xl space-y-2 text-xs border border-gray-200">
+          <div className="flex justify-between text-gray-600">
+            <span>Thời gian ở:</span>
+            <span className="font-semibold text-gray-900">{nights} đêm</span>
+          </div>
+
+          <div className="flex justify-between text-gray-600">
+            <span>Phí Dịch Vụ tự động (350k x {bedroomsNum} P.Ngủ x {nights} đêm):</span>
+            <span className="font-semibold text-gray-900">{autoServiceFee.toLocaleString('en-US')} VNĐ</span>
+          </div>
+
+          <div className="flex justify-between text-gray-800 pt-1 border-t border-gray-200">
+            <span>Tổng Giá Trị (Bằng giá phòng):</span>
+            <span className="font-bold text-gray-900 text-sm">{totalPrice.toLocaleString('en-US')} VNĐ</span>
+          </div>
+
+          <div className="flex justify-between text-blue-700">
+            <span>Còn Phải Thu (Tổng tiền - Cọc):</span>
+            <span className="font-bold text-blue-700 text-sm">{remainingPrice.toLocaleString('en-US')} VNĐ</span>
+          </div>
         </div>
 
-        {/* Card Tính toán tự động */}
-        <div className="p-3 bg-gray-50 rounded-xl space-y-1.5 text-xs text-gray-600 border border-gray-200">
-          <div className="flex justify-between">
-            <span>Tổng Giá Trị (totalPrice):</span>
-            <span className="font-bold text-gray-900">{totalPrice.toLocaleString()} VNĐ</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Cần Thanh Toán (remainingPrice):</span>
-            <span className="font-bold text-blue-600">{remainingPrice.toLocaleString()} VNĐ</span>
-          </div>
-        </div>
-
-        {/* Mã xác nhận */}
+        {/* Mã Xác Nhận */}
         <div>
           <label className="text-xs font-semibold text-gray-600">Mã Xác Nhận Booking (Nếu có)</label>
           <input 
@@ -187,12 +254,12 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
             onChange={e => setFormData({...formData, confirmationCode: e.target.value})}
             className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
           />
-          <p className="text-[10px] text-gray-400 mt-1">*Để trống đơn sẽ ở trạng thái PENDING</p>
+          <p className="text-[10px] text-gray-400 mt-1">*Để trống đơn sẽ tự động ở trạng thái PENDING</p>
         </div>
 
         <button 
           type="submit" 
-          className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-xl shadow-md active:scale-[0.98] transition"
+          className="w-full bg-blue-600 active:bg-blue-700 text-white font-bold py-3 rounded-xl shadow-md transition"
         >
           Lưu Đơn Đặt Phòng
         </button>

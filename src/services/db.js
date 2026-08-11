@@ -5,7 +5,7 @@ export const db = new Dexie('PMSBookingDatabase');
 
 // Đăng ký bảng và các chỉ mục (indexes)
 db.version(1).stores({
-  bookings: 'id, createdDate, salesPerson, checkInDate, checkOutDate, roomCode, status, updatedAt',
+  bookings: 'id, createdDate, salesPerson, checkInDate, checkOutDate, roomCode, status, updatedAt, bedrooms',
   salesPersons: '++id, name, company'
 });
 
