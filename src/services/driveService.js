@@ -1,50 +1,78 @@
 // src/services/driveService.js
 import { db } from './db';
 
+// ⚠️ BẮT BUỘC: Thay chuỗi dưới đây bằng Client ID thực tế từ Google Cloud Console
 const CLIENT_ID = '654261831807-63lf63vk0jhqqkcm6t7lh9t5hesbo81q.apps.googleusercontent.com'; // Thay bằng Client ID Google Cloud của bạn
 const SCOPES = 'https://www.googleapis.com/auth/drive.appdata';
 
 let tokenClient = null;
 
-// Khởi tạo Google Identity Services
-export const initGoogleDriveAuth = (onSuccess, onError) => {
-  if (window.google) {
-    tokenClient = window.google.accounts.oauth2.initTokenClient({
-      client_id: CLIENT_ID,
-      scope: SCOPES,
-      callback: (tokenResponse) => {
-        if (tokenResponse && tokenResponse.access_token) {
-          localStorage.setItem('gdrive_token', tokenResponse.access_token);
-          onSuccess(tokenResponse.access_token);
-        } else {
-          onError(tokenResponse);
-        }
-      },
-    });
+// Hàm hỗ trợ tải SDK động nếu file index.html chưa load kịp
+const loadGoogleSDK = () => {
+  return new Promise((resolve, reject) => {
+    if (window.google?.accounts?.oauth2) {
+      return resolve();
+    }
+    const script = document.createElement('script');
+    script.src = 'https://accounts.google.com/gsi/client';
+    script.onload = () => resolve();
+    script.onerror = (err) => reject(err);
+    document.body.appendChild(script);
+  });
+};
+
+// Khởi tạo Google Token Client
+export const initGoogleDriveAuth = async (onSuccess, onError) => {
+  try {
+    await loadGoogleSDK();
+    
+    if (window.google?.accounts?.oauth2) {
+      tokenClient = window.google.accounts.oauth2.initTokenClient({
+        client_id: CLIENT_ID,
+        scope: SCOPES,
+        callback: (tokenResponse) => {
+          if (tokenResponse && tokenResponse.access_token) {
+            localStorage.setItem('gdrive_token', tokenResponse.access_token);
+            onSuccess(tokenResponse.access_token);
+          } else {
+            console.error('Lỗi phản hồi OAuth:', tokenResponse);
+            if (onError) onError(tokenResponse);
+          }
+        },
+      });
+    }
+  } catch (error) {
+    console.error('Không thể tải Google Identity SDK:', error);
   }
 };
 
+// Kích hoạt cửa sổ đăng nhập Google
 export const loginGoogle = () => {
+  if (CLIENT_ID.includes('YOUR_GOOGLE_CLIENT_ID')) {
+    alert('⚠️ Bạn chưa cấu hình CLIENT_ID thực tế từ Google Cloud Console trong file driveService.js!');
+    return;
+  }
+
   if (tokenClient) {
     tokenClient.requestAccessToken({ prompt: 'consent' });
   } else {
-    alert('Thư viện Google Identity Services chưa tải xong, vui lòng thử lại.');
+    alert('Đang tải kết nối Google Drive, vui lòng bấm lại sau 3 giây...');
   }
 };
 
-// Xuất toàn bộ DB thành JSON
+// Xuất dữ liệu Database
 export const exportDatabaseJSON = async () => {
   const bookings = await db.bookings.toArray();
   const salesPersons = await db.salesPersons.toArray();
   return JSON.stringify({ bookings, salesPersons, exportedAt: new Date().toISOString() });
 };
 
-// Tải backup đè/tạo mới lên Google Drive appDataFolder
+// Tải file backup lên Google Drive
 export const uploadBackupToDrive = async (accessToken) => {
   try {
     const jsonString = await exportDatabaseJSON();
     
-    // Tìm file pms_backup.json đã tồn tại trên Drive chưa
+    // Kiểm tra file cũ trên Drive
     const searchRes = await fetch(
       "https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name='pms_backup.json'",
       { headers: { Authorization: `Bearer ${accessToken}` } }
@@ -79,7 +107,7 @@ export const uploadBackupToDrive = async (accessToken) => {
   }
 };
 
-// Khôi phục dữ liệu từ Google Drive về IndexedDB
+// Khôi phục dữ liệu từ Google Drive
 export const restoreFromDrive = async (accessToken) => {
   try {
     const searchRes = await fetch(
@@ -88,7 +116,7 @@ export const restoreFromDrive = async (accessToken) => {
     );
     const searchData = await searchRes.json();
     if (!searchData.files || searchData.files.length === 0) {
-      alert('Không tìm thấy bản sao lưu trên Google Drive!');
+      alert('Không tìm thấy bản sao lưu nào trên Google Drive!');
       return false;
     }
 
@@ -99,15 +127,15 @@ export const restoreFromDrive = async (accessToken) => {
     
     const backupData = await fileRes.json();
     
-    // Merge vào IndexedDB
     if (backupData.bookings) await db.bookings.bulkPut(backupData.bookings);
     if (backupData.salesPersons) await db.salesPersons.bulkPut(backupData.salesPersons);
 
-    alert('Đã khôi phục dữ liệu từ Google Drive thành công!');
+    alert('Khôi phục dữ liệu từ Google Drive thành công!');
+    window.location.reload();
     return true;
   } catch (error) {
     console.error('Lỗi khôi phục từ Drive:', error);
-    alert('Khôi phục thất bại.');
+    alert('Khôi phục dữ liệu thất bại.');
     return false;
   }
 };
