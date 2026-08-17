@@ -44,6 +44,11 @@ export default function App() {
     triggerAutoBackup();
   };
 
+  const handleEditBooking = async (id, updatedBooking) => {
+    await db.bookings.update(id, updatedBooking);
+    triggerAutoBackup();
+  };
+
   const handleAddSales = async (newSales) => {
     await db.salesPersons.add(newSales);
     triggerAutoBackup();
@@ -88,6 +93,8 @@ export default function App() {
           <PendingList
             pendingBookings={pendingBookings}
             onApproveBooking={handleApproveBooking}
+            onEditBooking={handleEditBooking}
+            salesList={salesList}
           />
         )}
         {activeTab === 'dashboard' && (

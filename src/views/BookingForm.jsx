@@ -45,9 +45,9 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
   const bedroomsNum = Number(formData.bedrooms) || 0;
   const autoServiceFee = bedroomsNum * nights * 350000;
 
-  // 3. Tổng Giá Trị = Giá Phòng (không cộng phí dịch vụ)
+  // 3. Tổng Giá Trị = Giá Phòng x Số đêm
   const roomPriceNum = parseCurrencyValue(formData.roomPriceStr);
-  const totalPrice = roomPriceNum;
+  const totalPrice = roomPriceNum * nights;
 
   // 4. Còn Phải Thu = Tổng Giá Trị - Tiền Cọc
   const depositNum = parseCurrencyValue(formData.depositStr);
@@ -235,7 +235,7 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
           </div>
 
           <div className="flex justify-between text-gray-800 pt-1 border-t border-gray-200">
-            <span>Tổng Giá Trị (Bằng giá phòng):</span>
+            <span>Tổng Giá Trị (Giá phòng x {nights} đêm):</span>
             <span className="font-bold text-gray-900 text-sm">{totalPrice.toLocaleString('en-US')} VNĐ</span>
           </div>
 
