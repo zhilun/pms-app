@@ -49,14 +49,27 @@ export default function App() {
     triggerAutoBackup();
   };
 
+  const handleEditSales = async (id, updatedSales) => {
+    await db.salesPersons.update(id, {
+      ...updatedSales,
+      updatedAt: new Date().toISOString()
+    });
+    triggerAutoBackup();
+  };
+
+  const handleDeleteSales = async (id) => {
+    await db.salesPersons.delete(id);
+    triggerAutoBackup();
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 font-sans text-gray-900">
-      <Header 
+      <Header
         title={
           activeTab === 'booking' ? 'Tạo Đặt Phòng' :
           activeTab === 'pending' ? 'Đơn Pending' :
           activeTab === 'dashboard' ? 'Báo Cáo Doanh Thu' : 'Khai Báo Sales'
-        } 
+        }
         driveStatus={!!driveToken}
         onConnectDrive={loginGoogle}
         onRestoreDrive={() => driveToken && restoreFromDrive(driveToken)}
@@ -64,7 +77,7 @@ export default function App() {
 
       <main>
         {activeTab === 'booking' && (
-          <BookingForm 
+          <BookingForm
             salesList={salesList}
             existingBookings={bookings}
             onSaveBooking={handleSaveBooking}
@@ -72,21 +85,23 @@ export default function App() {
           />
         )}
         {activeTab === 'pending' && (
-          <PendingList 
+          <PendingList
             pendingBookings={pendingBookings}
             onApproveBooking={handleApproveBooking}
           />
         )}
         {activeTab === 'dashboard' && (
-          <Dashboard 
+          <Dashboard
             bookings={bookings}
             salesList={salesList}
           />
         )}
         {activeTab === 'sales' && (
-          <SalesManager 
+          <SalesManager
             salesList={salesList}
             onAddSales={handleAddSales}
+            onEditSales={handleEditSales}
+            onDeleteSales={handleDeleteSales}
           />
         )}
       </main>
