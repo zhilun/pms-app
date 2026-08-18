@@ -56,8 +56,8 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
   // Kiểm tra trùng lịch phòng
   useEffect(() => {
     if (formData.roomCode && formData.checkInDate && formData.checkOutDate) {
-      const isOverlap = existingBookings.some(b => 
-        b.roomCode.toLowerCase() === formData.roomCode.toLowerCase() &&
+      const isOverlap = existingBookings.some(b =>
+        b.roomCode && b.roomCode.toLowerCase() === formData.roomCode.toLowerCase() &&
         !(formData.checkOutDate <= b.checkInDate || formData.checkInDate >= b.checkOutDate)
       );
       if (isOverlap) {

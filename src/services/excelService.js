@@ -16,8 +16,28 @@ export const exportBookingsToExcel = (bookingsList) => {
     'Mã xác nhận': b.confirmationCode || ''
   }));
 
-  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+  // Tính tổng cộng
   
+  const totalDeposit = bookingsList.reduce((sum, b) => sum + (b.deposit || 0), 0);
+  const totalRemaining = bookingsList.reduce((sum, b) => sum + (b.remainingPrice || 0), 0);
+  const totalServiceFee = bookingsList.reduce((sum, b) => sum + (b.serviceFee || 0), 0);
+
+  // Thêm dòng tổng cộng
+  formattedData.push({
+    'Ngày sales đặt': '',
+    'Tên sales': '',
+    'Mã phòng': '',
+    'Ngày CheckIn': '',
+    'Ngày CheckOut': '',
+    'Giá phòng': '',
+    'Tiền Cọc': totalDeposit,
+    'Tiền cần thanh toán': totalRemaining,
+    'Tiền dịch vụ': totalServiceFee,
+    'Mã xác nhận': 'TỔNG CỘNG'
+  });
+
+  const worksheet = XLSX.utils.json_to_sheet(formattedData);
+
   // Tự động căn chỉnh độ rộng cột
   const columnWidths = [
     { wch: 15 }, { wch: 20 }, { wch: 12 }, { wch: 15 }, { wch: 15 },
