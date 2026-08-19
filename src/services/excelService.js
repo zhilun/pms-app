@@ -2,6 +2,16 @@
 import ExcelJS from 'exceljs';
 
 export const exportBookingsToExcel = (bookingsList) => {
+  // Sắp xếp theo ngày từ cũ đến mới, sau đó là tên sales
+  const sortedList = [...bookingsList].sort((a, b) => {
+    const dateA = new Date(a.createdDate);
+    const dateB = new Date(b.createdDate);
+    if (dateA - dateB !== 0) {
+      return dateA - dateB;
+    }
+    return (a.salesPerson || '').localeCompare(b.salesPerson || '');
+  });
+
   const workbook = new ExcelJS.Workbook();
   const worksheet = workbook.addWorksheet('Báo Cáo Doanh Thu');
 
@@ -25,9 +35,9 @@ export const exportBookingsToExcel = (bookingsList) => {
   });
 
   // Tính tổng cộng
-  const totalDeposit = bookingsList.reduce((sum, b) => sum + (b.deposit || 0), 0);
-  const totalRemaining = bookingsList.reduce((sum, b) => sum + (b.remainingPrice || 0), 0);
-  const totalServiceFee = bookingsList.reduce((sum, b) => sum + (b.serviceFee || 0), 0);
+  const totalDeposit = sortedList.reduce((sum, b) => sum + (b.deposit || 0), 0);
+  const totalRemaining = sortedList.reduce((sum, b) => sum + (b.remainingPrice || 0), 0);
+  const totalServiceFee = sortedList.reduce((sum, b) => sum + (b.serviceFee || 0), 0);
 
   // Parse date string thành Date object
   const parseDate = (dateString) => {
@@ -36,7 +46,7 @@ export const exportBookingsToExcel = (bookingsList) => {
   };
 
   // Thêm dữ liệu
-  bookingsList.forEach((b) => {
+  sortedList.forEach((b) => {
     worksheet.addRow([
       parseDate(b.createdDate),
       b.salesPerson,
@@ -52,7 +62,7 @@ export const exportBookingsToExcel = (bookingsList) => {
   });
 
   // Thêm dòng tổng cộng
-  const totalRowNum = bookingsList.length + 2;
+  const totalRowNum = sortedList.length + 2;
   worksheet.addRow([
     '', '', '', '', '', 'TỔNG CỘNG', totalDeposit, totalRemaining, totalServiceFee, ''
   ]);
@@ -105,6 +115,9 @@ export const exportBookingsToExcel = (bookingsList) => {
     { width: 15 }, { width: 20 }, { width: 12 }, { width: 15 }, { width: 15 },
     { width: 15 }, { width: 15 }, { width: 18 }, { width: 15 }, { width: 18 }
   ];
+
+  // Thêm AutoFilter cho hàng đầu
+  worksheet.autoFilter = 'A1:J1';
 
   // Xuất file
   const fileName = `PMS_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
