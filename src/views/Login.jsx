@@ -28,7 +28,7 @@ export const Login = ({ onLoginSuccess }) => {
     <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
       <form onSubmit={handleAuth} className="bg-white p-6 rounded-2xl shadow-md w-full max-w-sm space-y-4">
         <h2 className="text-xl font-bold text-center text-gray-800">
-          {isSignUp ? 'Đăng Ký Tài Khoản' : 'Đăng Nhập PMS'}
+          {isSignUp ? 'Đăng Ký Tài Khoản' : 'Đăng Nhập'}
         </h2>
         <div>
           <label className="text-xs font-semibold text-gray-600">Email</label>
