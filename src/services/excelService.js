@@ -29,14 +29,20 @@ export const exportBookingsToExcel = (bookingsList) => {
   const totalRemaining = bookingsList.reduce((sum, b) => sum + (b.remainingPrice || 0), 0);
   const totalServiceFee = bookingsList.reduce((sum, b) => sum + (b.serviceFee || 0), 0);
 
+  // Parse date string thành Date object
+  const parseDate = (dateString) => {
+    if (!dateString) return '';
+    return new Date(dateString);
+  };
+
   // Thêm dữ liệu
   bookingsList.forEach((b) => {
     worksheet.addRow([
-      b.createdDate,
+      parseDate(b.createdDate),
       b.salesPerson,
       b.roomCode,
-      b.checkInDate,
-      b.checkOutDate,
+      parseDate(b.checkInDate),
+      parseDate(b.checkOutDate),
       b.roomPrice,
       b.deposit,
       b.remainingPrice,
@@ -55,7 +61,7 @@ export const exportBookingsToExcel = (bookingsList) => {
   const totalRow = worksheet.getRow(totalRowNum);
   totalRow.font = { bold: true };
 
-  // Format border + tiền cho tất cả data rows
+  // Format border + tiền + ngày cho tất cả data rows
   for (let rowNum = 2; rowNum <= totalRowNum; rowNum++) {
     const row = worksheet.getRow(rowNum);
 
@@ -71,8 +77,20 @@ export const exportBookingsToExcel = (bookingsList) => {
       };
     });
 
+    // Cột ngày (col 1, 4, 5): format dd-MM-yyyy + border
+    [1, 4, 5].forEach((colNum) => {
+      const cell = row.getCell(colNum);
+      cell.numFmt = 'dd-mm-yyyy';
+      cell.border = {
+        top: { style: 'thin' },
+        bottom: { style: 'thin' },
+        left: { style: 'thin' },
+        right: { style: 'thin' }
+      };
+    });
+
     // Border cho các cột khác
-    [1, 2, 3, 4, 5, 10].forEach((colNum) => {
+    [2, 3, 10].forEach((colNum) => {
       row.getCell(colNum).border = {
         top: { style: 'thin' },
         bottom: { style: 'thin' },
