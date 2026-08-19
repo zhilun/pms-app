@@ -81,6 +81,11 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
       return;
     }
 
+    if (depositNum >= totalPrice) {
+      alert('Tiền Cọc phải nhỏ hơn Tổng Giá Trị!');
+      return;
+    }
+
     const newBooking = {
       id: crypto.randomUUID(),
       createdDate: new Date().toISOString().split('T')[0],
@@ -189,10 +194,11 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-600">Ngày Check-Out (*)</label>
-            <input 
-              required type="date" 
+            <input
+              required type="date"
               value={formData.checkOutDate}
               onChange={e => setFormData({...formData, checkOutDate: e.target.value})}
+              min={formData.checkInDate}
               className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
             />
           </div>
@@ -202,7 +208,7 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label className="text-xs font-semibold text-gray-600">Giá Phòng (VNĐ)</label>
-            <input 
+            <input
               type="text"
               placeholder="0"
               value={formData.roomPriceStr}
@@ -212,15 +218,21 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-600">Tiền Cọc Đã Trả (VNĐ)</label>
-            <input 
+            <input
               type="text"
               placeholder="0"
               value={formData.depositStr}
               onChange={e => handleMoneyChange('depositStr', e.target.value)}
-              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm font-medium"
+              className={`w-full p-2.5 rounded-xl text-sm font-medium border-2 ${depositNum >= totalPrice && totalPrice > 0 ? 'border-red-500 bg-red-50' : 'border-gray-300'}`}
             />
           </div>
         </div>
+
+        {depositNum >= totalPrice && totalPrice > 0 && (
+          <div className="p-3 bg-red-50 border-l-4 border-red-500 text-red-800 text-sm rounded-r shadow-sm">
+            ❌ Tiền Cọc phải nhỏ hơn Tổng Giá Trị ({totalPrice.toLocaleString('en-US')} VNĐ)
+          </div>
+        )}
 
         {/* Bảng Tính Toán Tự Động */}
         <div className="p-3.5 bg-gray-50 rounded-2xl space-y-2 text-xs border border-gray-200">
