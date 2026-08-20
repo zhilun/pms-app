@@ -173,23 +173,23 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
         </div>
 
         {/* Số Phòng Ngủ & Lịch Check-In / Check-Out */}
-        <div className="grid grid-cols-3 gap-2">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
           <div>
             <label className="text-xs font-semibold text-gray-600">Số Phòng Ngủ (*)</label>
-            <input 
+            <input
               required type="number" min="1"
               value={formData.bedrooms}
               onChange={e => setFormData({...formData, bedrooms: e.target.value})}
-              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
+              className="w-full p-2 border border-gray-300 rounded-xl text-sm"
             />
           </div>
           <div>
             <label className="text-xs font-semibold text-gray-600">Ngày Check-In (*)</label>
-            <input 
-              required type="date" 
+            <input
+              required type="date"
               value={formData.checkInDate}
               onChange={e => setFormData({...formData, checkInDate: e.target.value})}
-              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
+              className="w-full p-2 border border-gray-300 rounded-xl text-sm"
             />
           </div>
           <div>
@@ -199,7 +199,7 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
               value={formData.checkOutDate}
               onChange={e => setFormData({...formData, checkOutDate: e.target.value})}
               min={formData.checkInDate}
-              className="w-full p-2.5 border border-gray-300 rounded-xl text-sm"
+              className="w-full p-2 border border-gray-300 rounded-xl text-sm"
             />
           </div>
         </div>

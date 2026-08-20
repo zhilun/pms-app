@@ -9,6 +9,10 @@ export const Dashboard = ({ bookings, salesList }) => {
   const [endDate, setEndDate] = useState('');
   const [includePending, setIncludePending] = useState(false);
   const [selectedSales, setSelectedSales] = useState('ALL');
+  const [selectedCompany, setSelectedCompany] = useState('ALL');
+
+  // Lấy danh sách công ty duy nhất từ salesList
+  const companies = ['ALL', ...new Set(salesList.map(s => s.company).filter(Boolean))].sort();
 
   // Hàm kiểm tra ngày có thỏa mãn bộ lọc không
   const isDateInFilter = (targetDateStr) => {
@@ -62,6 +66,13 @@ export const Dashboard = ({ bookings, salesList }) => {
   const filteredBookings = bookings.filter(b => {
     if (!includePending && b.status !== 'CONFIRMED') return false;
     if (selectedSales !== 'ALL' && b.salesPerson !== selectedSales) return false;
+
+    // Lọc theo công ty
+    if (selectedCompany !== 'ALL') {
+      const bookingSalesCompany = salesList.find(s => s.name === b.salesPerson)?.company;
+      if (bookingSalesCompany !== selectedCompany) return false;
+    }
+
     const dateToCompare = dateField === 'checkInDate' ? b.checkInDate : b.createdDate;
     return isDateInFilter(dateToCompare);
   });
@@ -143,12 +154,12 @@ export const Dashboard = ({ bookings, salesList }) => {
           </div>
         )}
 
-        {/* Hàng 2: Lọc Sales & Toggle đơn Pending */}
+        {/* Hàng 2: Lọc Sales & Lọc Công Ty */}
         <div className="grid grid-cols-2 gap-2 pt-2 border-t">
           <div>
             <label className="font-semibold text-gray-600 mb-1 block">NV Sales</label>
-            <select 
-              value={selectedSales} 
+            <select
+              value={selectedSales}
               onChange={e => setSelectedSales(e.target.value)}
               className="w-full p-1.5 border rounded-xl bg-gray-50 text-xs"
             >
@@ -159,21 +170,37 @@ export const Dashboard = ({ bookings, salesList }) => {
             </select>
           </div>
 
-          <div className="flex items-end pb-1">
-            <label className="flex items-center gap-1.5 cursor-pointer font-medium text-gray-600">
-              <input 
-                type="checkbox" 
-                checked={includePending} 
-                onChange={e => setIncludePending(e.target.checked)} 
-                className="rounded text-blue-600 w-4 h-4"
-              />
-              Bao gồm đơn Pending
-            </label>
+          <div>
+            <label className="font-semibold text-gray-600 mb-1 block">Công Ty</label>
+            <select
+              value={selectedCompany}
+              onChange={e => setSelectedCompany(e.target.value)}
+              className="w-full p-1.5 border rounded-xl bg-gray-50 text-xs"
+            >
+              {companies.map((company, idx) => (
+                <option key={idx} value={company}>
+                  {company === 'ALL' ? 'Tất cả công ty' : company}
+                </option>
+              ))}
+            </select>
           </div>
         </div>
 
-        <button 
-          onClick={() => exportBookingsToExcel(filteredBookings)}
+        {/* Hàng 3: Toggle đơn Pending */}
+        <div className="pt-1 border-t">
+          <label className="flex items-center gap-1.5 cursor-pointer font-medium text-gray-600 text-xs">
+            <input
+              type="checkbox"
+              checked={includePending}
+              onChange={e => setIncludePending(e.target.checked)}
+              className="rounded text-blue-600 w-4 h-4"
+            />
+            Bao gồm đơn Pending
+          </label>
+        </div>
+
+        <button
+          onClick={() => exportBookingsToExcel(filteredBookings, salesList)}
           className="w-full bg-emerald-600 active:bg-emerald-700 text-white py-2 rounded-xl font-bold flex items-center justify-center gap-2 shadow-sm text-xs mt-1"
         >
           📥 Xuất File Excel Báo Cáo

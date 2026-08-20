@@ -1,7 +1,7 @@
 // src/services/excelService.js
 import ExcelJS from 'exceljs';
 
-export const exportBookingsToExcel = (bookingsList) => {
+export const exportBookingsToExcel = (bookingsList, salesList = []) => {
   // Sắp xếp theo ngày từ cũ đến mới, sau đó là tên sales
   const sortedList = [...bookingsList].sort((a, b) => {
     const dateA = new Date(a.createdDate);
@@ -17,7 +17,7 @@ export const exportBookingsToExcel = (bookingsList) => {
 
   // Headers
   const headers = [
-    'Ngày sales đặt', 'Tên sales', 'Mã phòng', 'Ngày CheckIn', 'Ngày CheckOut',
+    'Ngày sales đặt', 'Tên sales', 'Công ty', 'Tên khách', 'Mã phòng', 'Ngày CheckIn', 'Ngày CheckOut',
     'Giá phòng', 'Tiền Cọc', 'Tiền cần thanh toán', 'Tiền dịch vụ', 'Mã xác nhận'
   ];
   worksheet.addRow(headers);
@@ -47,9 +47,13 @@ export const exportBookingsToExcel = (bookingsList) => {
 
   // Thêm dữ liệu
   sortedList.forEach((b) => {
+    const salesPerson = salesList.find(s => s.name === b.salesPerson);
+    const company = salesPerson?.company || '';
     worksheet.addRow([
       parseDate(b.createdDate),
       b.salesPerson,
+      company,
+      b.customerName || b.customer_name || '',
       b.roomCode,
       parseDate(b.checkInDate),
       parseDate(b.checkOutDate),
@@ -64,7 +68,7 @@ export const exportBookingsToExcel = (bookingsList) => {
   // Thêm dòng tổng cộng
   const totalRowNum = sortedList.length + 2;
   worksheet.addRow([
-    '', '', '', '', '', 'TỔNG CỘNG', totalDeposit, totalRemaining, totalServiceFee, ''
+    '', '', '', '', '', '', '', 'TỔNG CỘNG', totalDeposit, totalRemaining, totalServiceFee, ''
   ]);
 
   // Định dạng dòng tổng: in đậm + border
@@ -75,8 +79,8 @@ export const exportBookingsToExcel = (bookingsList) => {
   for (let rowNum = 2; rowNum <= totalRowNum; rowNum++) {
     const row = worksheet.getRow(rowNum);
 
-    // Cột tiền (col 6, 7, 8, 9): format + border
-    [6, 7, 8, 9].forEach((colNum) => {
+    // Cột tiền (col 8, 9, 10, 11): format + border
+    [8, 9, 10, 11].forEach((colNum) => {
       const cell = row.getCell(colNum);
       cell.numFmt = '#,##0';
       cell.border = {
@@ -87,8 +91,8 @@ export const exportBookingsToExcel = (bookingsList) => {
       };
     });
 
-    // Cột ngày (col 1, 4, 5): format dd-MM-yyyy + border
-    [1, 4, 5].forEach((colNum) => {
+    // Cột ngày (col 1, 6, 7): format dd-MM-yyyy + border
+    [1, 6, 7].forEach((colNum) => {
       const cell = row.getCell(colNum);
       cell.numFmt = 'dd-mm-yyyy';
       cell.border = {
@@ -100,7 +104,7 @@ export const exportBookingsToExcel = (bookingsList) => {
     });
 
     // Border cho các cột khác
-    [2, 3, 10].forEach((colNum) => {
+    [2, 3, 4, 5, 12].forEach((colNum) => {
       row.getCell(colNum).border = {
         top: { style: 'thin' },
         bottom: { style: 'thin' },
@@ -112,12 +116,12 @@ export const exportBookingsToExcel = (bookingsList) => {
 
   // Định dạng chiều rộng cột
   worksheet.columns = [
-    { width: 15 }, { width: 20 }, { width: 12 }, { width: 15 }, { width: 15 },
+    { width: 15 }, { width: 20 }, { width: 18 }, { width: 20 }, { width: 12 }, { width: 15 }, { width: 15 },
     { width: 15 }, { width: 15 }, { width: 18 }, { width: 15 }, { width: 18 }
   ];
 
   // Thêm AutoFilter cho hàng đầu
-  worksheet.autoFilter = 'A1:J1';
+  worksheet.autoFilter = 'A1:L1';
 
   // Xuất file
   const fileName = `PMS_Report_${new Date().toISOString().split('T')[0]}.xlsx`;
