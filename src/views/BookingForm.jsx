@@ -1,5 +1,6 @@
 // src/views/BookingForm.jsx
 import React, { useState, useEffect } from 'react';
+import { SearchableSelect } from '../components/SearchableSelect';
 
 // Hàm hỗ trợ format tiền tệ (Ví dụ: 1000000 -> "1,000,000")
 const formatCurrencyInput = (val) => {
@@ -132,23 +133,17 @@ export const BookingForm = ({ salesList, onSaveBooking, existingBookings, onOpen
 
       <form onSubmit={handleSubmit} className="space-y-4 bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
         {/* Nhân Viên Sales */}
-        <div>
-          <div className="flex justify-between items-center mb-1">
-            <label className="text-xs font-semibold text-gray-600">NV Sales (*)</label>
-            <button type="button" onClick={onOpenAddSales} className="text-xs text-blue-600 font-medium">+ Khai Báo Sales</button>
-          </div>
-          <select 
-            required
-            value={formData.salesPerson} 
-            onChange={e => setFormData({...formData, salesPerson: e.target.value})}
-            className="w-full p-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 outline-none text-sm"
-          >
-            <option value="">-- Chọn Sales Person --</option>
-            {salesList.map((s, idx) => (
-              <option key={idx} value={s.name}>{s.name} ({s.company})</option>
-            ))}
-          </select>
-        </div>
+        <SearchableSelect
+          label="NV Sales"
+          options={salesList}
+          value={formData.salesPerson}
+          onChange={(value) => setFormData({...formData, salesPerson: value})}
+          placeholder="Tìm kiếm Sales Person..."
+          required={true}
+          displayKey="name"
+          onOpenAddNew={onOpenAddSales}
+          addNewButtonLabel="+ Khai Báo Sales"
+        />
 
         {/* Khách Hàng & Mã Phòng */}
         <div className="grid grid-cols-2 gap-3">
